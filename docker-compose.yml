@@ -1,0 +1,11 @@
+services:
+  gateway:
+    build: .
+    network_mode: "host"  # Use host networking to access localhost services
+    environment:
+      - PORT=8082
+      - SEED_SECRET_KEY=${SEED_SECRET_KEY}
+      - ALLOWED_TARGET_ORIGINS=api.tinfoil.sh,leader.tinfoil.sh,helper.tinfoil.sh
+      - TARGET_REWRITES={"api.tinfoil.sh":{"Scheme":"http","Host":"localhost:8080"},"leader.tinfoil.sh":{"Scheme":"http","Host":"localhost:9787"},"helper.tinfoil.sh":{"Scheme":"https","Host":"helper.tinfoil.sh"}}
+      - LOG_LEVEL=debug
+      - LOG_FORMAT=json

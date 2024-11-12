@@ -17,6 +17,6 @@ ARG GIT_REVISION=unknown
 LABEL revision ${GIT_REVISION}
 COPY --from=build /privacy-gateway-server /privacy-gateway-server
 
-EXPOSE 8080
+EXPOSE 8082
 
 CMD ["/privacy-gateway-server"]

@@ -144,7 +144,10 @@ func main() {
 		os.Exit(1)
 	}
 
-	handlerOptions := slog.HandlerOptions{Level: logLevel}
+	handlerOptions := slog.HandlerOptions{
+		Level:     logLevel,
+		AddSource: true, // Add source code location to logs
+	}
 	var handler slog.Handler
 
 	switch logFormat := getStringEnv(logFormatEnvironmentVariable, logFormatDefault); logFormat {

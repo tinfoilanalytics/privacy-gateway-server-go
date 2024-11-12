@@ -1,2 +1,4 @@
 *.pem
 app-gateway-go
+.env
+*.key
