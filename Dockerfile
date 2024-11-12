@@ -2,14 +2,19 @@ FROM golang:1.21-bookworm as build
 
 WORKDIR /app
 
-COPY go.* ./
-RUN go mod download
+# Copy go.mod, go.sum, and the vendor directory
+COPY go.* vendor/ ./
 
+# Remove the go mod download step since we're using vendored dependencies
+# RUN go mod download
+
+# Copy the rest of the application code
 COPY . ./
 
-RUN CGO_ENABLED=0 GOOS=linux GOARCH=amd64 go build \
-      -ldflags='-w -s -extldflags "-static"' -a \
-      -o /privacy-gateway-server
+# Build the application using the vendored dependencies
+RUN CGO_ENABLED=0 GOOS=linux GOARCH=amd64 go build -mod=vendor \
+    -ldflags='-w -s -extldflags "-static"' -a \
+    -o /privacy-gateway-server
 
 FROM gcr.io/distroless/static
 

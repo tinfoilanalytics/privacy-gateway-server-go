@@ -229,11 +229,40 @@ func main() {
 	debugResponse := getBoolEnv(gatewayDebugEnvironmentVariable, false)
 
 	configID := uint8(getUintEnv(configurationIdEnvironmentVariable, 0))
-	config, err := ohttp.NewConfigFromSeed(configID, hpke.KEM_X25519_KYBER768_DRAFT00, hpke.KDF_HKDF_SHA256, hpke.AEAD_AES128GCM, seed)
+	config, err := ohttp.NewConfigFromSeed(configID, hpke.KEM_X25519_HKDF_SHA256, hpke.KDF_HKDF_SHA256, hpke.AEAD_AES128GCM, seed)
 	if err != nil {
 		slog.Error("Failed to create gateway configuration from seed", "error", err)
 		os.Exit(1)
 	}
+
+	// Access the public config
+	publicConfig := config.Config()
+
+	// Print the components of the public config
+	fmt.Printf("Public Config ID: %d\n", publicConfig.ID)
+	fmt.Printf("HPKE KEM ID: 0x%04x\n", uint16(publicConfig.KEMID))
+	fmt.Printf("Public Key Bytes: %s\n", hex.EncodeToString(publicConfig.PublicKeyBytes))
+
+	// Print the Suites (KDF and AEAD IDs)
+	for i, suite := range publicConfig.Suites {
+		fmt.Printf("Suite %d:\n", i)
+		fmt.Printf("  KDF ID: 0x%04x\n", uint16(suite.KDFID))
+		fmt.Printf("  AEAD ID: 0x%04x\n", uint16(suite.AEADID))
+	}
+
+	// Marshal the public config to bytes
+	serializedConfig := publicConfig.Marshal()
+	fmt.Printf("Serialized Public Config (hex): %s\n", hex.EncodeToString(serializedConfig))
+
+	// Print the serialized config as uint8 values
+	fmt.Printf("Serialized Public Config as uint8 slice:\n[]uint8{")
+	for i, b := range serializedConfig {
+		if i > 0 {
+			fmt.Printf(", ")
+		}
+		fmt.Printf("%d", b)
+	}
+	fmt.Printf("}\n")
 
 	// From the primary configuration ID, create a key ID for the legacy configuration that old
 	// clients will use for obtaining configuration material. This will eventually be removed once all
@@ -366,7 +395,8 @@ func main() {
 		target:        target,
 	}
 
-	http.HandleFunc(gatewayEndpoint, server.target.gatewayHandler)
+	http.HandleFunc(gatewayEndpoint, addCorsHeaders(server.target.gatewayHandler))
+
 	http.HandleFunc(echoEndpoint, server.target.gatewayHandler)
 	http.HandleFunc(metadataEndpoint, server.target.gatewayHandler)
 	http.HandleFunc(healthEndpoint, server.healthCheckHandler)
@@ -386,5 +416,20 @@ func main() {
 		slog.Debug("Listening without enabling TLS", "port", port)
 		slog.Error("error serving non-TLS", "error", http.ListenAndServe(fmt.Sprintf(":%s", port), nil))
 		os.Exit(1)
+	}
+}
+
+func addCorsHeaders(handler http.HandlerFunc) http.HandlerFunc {
+	return func(w http.ResponseWriter, r *http.Request) {
+		w.Header().Set("Access-Control-Allow-Origin", "*")
+		w.Header().Set("Access-Control-Allow-Methods", "GET, POST, OPTIONS")
+		w.Header().Set("Access-Control-Allow-Headers", "Content-Type, Accept")
+
+		if r.Method == "OPTIONS" {
+			w.WriteHeader(http.StatusOK)
+			return
+		}
+
+		handler(w, r)
 	}
 }
