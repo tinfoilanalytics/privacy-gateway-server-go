@@ -5,7 +5,7 @@ services:
     environment:
       - PORT=8082
       - SEED_SECRET_KEY=${SEED_SECRET_KEY}
-      - ALLOWED_TARGET_ORIGINS=localhost:8080,127.0.0.1:8080
-      - TARGET_REWRITES={"localhost:8080":{"Scheme":"http","Host":"localhost:8080"},"localhost:9787":{"Scheme":"http","Host":"localhost:9787"},"localhost:9788":{"Scheme":"http","Host":"localhost:9788"}}
+      - ALLOWED_TARGET_ORIGINS=localhost:8080,127.0.0.1:8080,localhost:3000,localhost:3000
+      - TARGET_REWRITES={"localhost:8080":{"Scheme":"http","Host":"localhost:8080"},"localhost:3000":{"Scheme":"http","Host":"localhost:3000"},"localhost:9787":{"Scheme":"http","Host":"localhost:9787"},"localhost:9788":{"Scheme":"http","Host":"localhost:9788"}}
       - LOG_LEVEL=debug
       - LOG_FORMAT=json
