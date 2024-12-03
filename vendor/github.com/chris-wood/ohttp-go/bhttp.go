@@ -189,10 +189,24 @@ func UnmarshalBinaryRequest(data []byte) (*http.Request, error) {
 			authority = headerMap["host"]
 		}
 	}
-	url, err := url.Parse(fmt.Sprintf("%s://%s%s", controlData.scheme, authority, controlData.path))
+
+	// Parse out the path and query components
+	pathAndQuery := controlData.path
+	var path, rawQuery string
+	if idx := strings.Index(pathAndQuery, "?"); idx != -1 {
+		path = pathAndQuery[:idx]
+		rawQuery = pathAndQuery[idx+1:]
+	} else {
+		path = pathAndQuery
+	}
+
+	// Reconstruct the URL with query parameters
+	urlStr := fmt.Sprintf("%s://%s%s", controlData.scheme, authority, path)
+	url, err := url.Parse(urlStr)
 	if err != nil {
 		return nil, err
 	}
+	url.RawQuery = rawQuery
 
 	// Content and trailers
 	trailerFields := new(fieldList)
@@ -260,12 +274,21 @@ type requestControlData struct {
 	path      string
 }
 
+// Helper function to get the full path including query string
+func getFullPath(u *url.URL) string {
+	if u.RawQuery == "" {
+		return u.Path
+	}
+	return u.Path + "?" + u.RawQuery
+}
+
+// Modified createRequestControlData to include query parameters
 func createRequestControlData(r *BinaryRequest) requestControlData {
 	return requestControlData{
 		method:    r.Method,
 		scheme:    r.URL.Scheme,
 		authority: r.Host,
-		path:      r.URL.Path,
+		path:      getFullPath(r.URL), // Now includes query parameters
 	}
 }
 
