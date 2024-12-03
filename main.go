@@ -395,14 +395,13 @@ func main() {
 		target:        target,
 	}
 
-	http.HandleFunc(gatewayEndpoint, addCorsHeaders(server.target.gatewayHandler))
-
+	http.HandleFunc(gatewayEndpoint, server.target.gatewayHandler)
 	http.HandleFunc(echoEndpoint, server.target.gatewayHandler)
 	http.HandleFunc(metadataEndpoint, server.target.gatewayHandler)
 	http.HandleFunc(healthEndpoint, server.healthCheckHandler)
 	http.HandleFunc(legacyConfigEndpoint, target.legacyConfigHandler)
 	http.HandleFunc(configEndpoint, target.configHandler)
-	http.HandleFunc("/", server.indexHandler)
+	http.HandleFunc("/ohttp-public", server.indexHandler)
 
 	var b bytes.Buffer
 	server.formatConfiguration(io.Writer(&b))

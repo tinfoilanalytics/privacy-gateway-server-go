@@ -4,8 +4,9 @@ services:
     network_mode: "host"  # Use host networking to access localhost services
     environment:
       - PORT=8082
+      - GATEWAY_ENDPOINT=/
       - SEED_SECRET_KEY=${SEED_SECRET_KEY}
-      - ALLOWED_TARGET_ORIGINS=localhost:8080,127.0.0.1:8080,localhost:3000,localhost:3000
-      - TARGET_REWRITES={"localhost:8080":{"Scheme":"http","Host":"localhost:8080"},"localhost:3000":{"Scheme":"http","Host":"localhost:3000"},"localhost:9787":{"Scheme":"http","Host":"localhost:9787"},"localhost:9788":{"Scheme":"http","Host":"localhost:9788"}}
+      - ALLOWED_TARGET_ORIGINS=api.tinfoil.sh
+      - TARGET_REWRITES={"api.tinfoil.sh":{"Scheme":"http","Host":"localhost:8080"}}
       - LOG_LEVEL=debug
       - LOG_FORMAT=json
