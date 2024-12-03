@@ -270,6 +270,13 @@ func (h BinaryHTTPAppHandler) Handle(binaryRequest []byte, metrics Metrics) ([]b
 		return h.wrappedError(PayloadMarshallingError, metrics)
 	}
 
+	slog.Info("decoded request",
+		"method", req.Method,
+		"url", req.URL.String(),
+		"raw_query", req.URL.RawQuery,
+		"headers", req.Header,
+	)
+
 	resp, err := h.httpHandler.Handle(req, metrics)
 	if err != nil {
 		if err == GatewayTargetForbiddenError {
@@ -327,59 +334,59 @@ type FilteredHttpRequestHandler struct {
 // Add to handler.go in FilteredHttpRequestHandler.Handle
 
 func (h FilteredHttpRequestHandler) Handle(req *http.Request, metrics Metrics) (*http.Response, error) {
-    // Log the incoming request details
-    slog.Info("internal request",
-        "method", req.Method,
-        "host", req.Host,
-        "path", req.URL.Path,
-        "target_scheme", req.URL.Scheme,
-        "target_url", req.URL.String(),
-        "headers", fmt.Sprintf("%v", req.Header),
-    )
+	// Log the incoming request details
+	slog.Info("internal request",
+		"method", req.Method,
+		"host", req.Host,
+		"path", req.URL.Path,
+		"target_scheme", req.URL.Scheme,
+		"target_url", req.URL.String(),
+		"headers", fmt.Sprintf("%v", req.Header),
+	)
 
-    if h.allowedOrigins != nil {
-        _, ok := h.allowedOrigins[req.Host]
-        if !ok {
-            metrics.Fire(metricsResultTargetRequestForbidden)
-            slog.Warn("request forbidden",
-                "host", req.Host,
-                "url", req.URL,
-                "allowed_origins", fmt.Sprintf("%v", h.allowedOrigins),
-            )
-            return nil, GatewayTargetForbiddenError
-        }
-    }
+	if h.allowedOrigins != nil {
+		_, ok := h.allowedOrigins[req.Host]
+		if !ok {
+			metrics.Fire(metricsResultTargetRequestForbidden)
+			slog.Warn("request forbidden",
+				"host", req.Host,
+				"url", req.URL,
+				"allowed_origins", fmt.Sprintf("%v", h.allowedOrigins),
+			)
+			return nil, GatewayTargetForbiddenError
+		}
+	}
 
-    if h.targetRewrites != nil {
-        if newTarget, ok := h.targetRewrites[req.URL.Host]; ok {
-            oldURL := req.URL.String()
-            req.URL.Scheme = newTarget.Scheme
-            req.URL.Host = newTarget.Host
-            slog.Info("rewriting request",
-                "from_url", oldURL,
-                "to_url", req.URL.String(),
-            )
-        }
-    }
+	if h.targetRewrites != nil {
+		if newTarget, ok := h.targetRewrites[req.URL.Host]; ok {
+			oldURL := req.URL.String()
+			req.URL.Scheme = newTarget.Scheme
+			req.URL.Host = newTarget.Host
+			slog.Info("rewriting request",
+				"from_url", oldURL,
+				"to_url", req.URL.String(),
+			)
+		}
+	}
 
-    resp, err := h.client.Handle(req, metrics)
-    if err != nil {
-        slog.Error("request failed",
-            "error", err,
-            "url", req.URL,
-        )
-        metrics.Fire(metricsResultTargetRequestFailed)
-        return nil, err
-    }
+	resp, err := h.client.Handle(req, metrics)
+	if err != nil {
+		slog.Error("request failed",
+			"error", err,
+			"url", req.URL,
+		)
+		metrics.Fire(metricsResultTargetRequestFailed)
+		return nil, err
+	}
 
-    // Log response
-    slog.Info("request completed",
-        "method", req.Method,
-        "url", req.URL.String(),
-        "status", resp.StatusCode,
-        "response_headers", fmt.Sprintf("%v", resp.Header),
-    )
+	// Log response
+	slog.Info("request completed",
+		"method", req.Method,
+		"url", req.URL.String(),
+		"status", resp.StatusCode,
+		"response_headers", fmt.Sprintf("%v", resp.Header),
+	)
 
-    metrics.Fire(metricsResultSuccess)
-    return resp, nil
+	metrics.Fire(metricsResultSuccess)
+	return resp, nil
 }
